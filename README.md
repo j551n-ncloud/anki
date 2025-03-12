@@ -4,7 +4,7 @@ anki card creator is a frontend-only website that helps you create anki cards fr
 
 I made this for myself and figured it could be useful to others so I am deploying it for feedback.
 
-It is deployed at https://anki-card-creator.pages.dev
+It is deployed at https://anki.j551n.com/
 
 We don't store anything except in local storage.
 
