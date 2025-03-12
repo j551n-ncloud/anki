@@ -75,11 +75,11 @@ export async function suggestAnkiNotes(
         body: JSON.stringify(body),
     });
 
-    if (!res.ok) throw new Error('Ai Providor API request failed');
+    if (!res.ok) throw new Error('Ai Provider API request failed');
     const data = await res.json();
 
     if (!data.choices || !data.choices.length) {
-        throw new Error('No completion choices were returned from Ai Providor');
+        throw new Error('No completion choices were returned from Ai Provider');
     }
 
     const noteContent = data.choices[0].message.content;
