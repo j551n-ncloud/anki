@@ -156,7 +156,7 @@ function Home() {
     const [processingFile, setProcessingFile] = useState(false);
     const [fileError, setFileError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    // const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
     const [deckName, setDeckName] = useLocalStorage("deckName", "Default");
     const [modelName, setModelName] = useState("Basic");
@@ -236,7 +236,8 @@ function Home() {
 
     // Handle file list changes
     const handleFileListChange = (files: File[]) => {
-        setUploadedFiles(files);
+        // We could track uploaded files here if needed
+        console.log(`File list updated: ${files.length} files`);
     };
 
     // If there's an initial prompt param, kick it off immediately
