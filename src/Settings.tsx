@@ -23,7 +23,7 @@ function Settings() {
                 <Grid item>
                     <TextField
                         type="password"
-                        label="OpenAI Key"
+                        label="AI Provider Key"
                         value={openAIKey}
                         onChange={handleOpenAIKeyChange}
                     />

@@ -179,7 +179,7 @@ function Home() {
                 <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to Anki using AnkiConnect. Please make sure Anki is running and you have the AnkiConnect plugin enabled, and that you have set the CORS settings.</Alert>
                 : <></>}
             {openAIError ?
-                <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to OpenAI. Ensure you have entered your OpenAI key correctly.</Alert>
+                <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to AI Provider. Ensure you have entered your OpenAI key correctly.</Alert>
                 : <></>}
             <Grid container item direction="column" spacing={2} justifyContent="flex-start">
                 <Grid item>
