@@ -38,9 +38,10 @@ export const parseFileContent = (fileContent: string, fileName: string): ParsedD
 const parseCSV = (content: string): ParsedData => {
   try {
     const csvData = parseCSVUtil(content);
+    
     return {
       format: 'csv',
-      content,
+      content: content,
       structured: csvData.data,
       headers: csvData.headers
     };
@@ -48,7 +49,7 @@ const parseCSV = (content: string): ParsedData => {
     console.error('Error parsing CSV:', error);
     return {
       format: 'text',
-      content
+      content: content
     };
   }
 };
@@ -61,14 +62,14 @@ const parseJSON = (content: string): ParsedData => {
     const parsed = JSON.parse(content);
     return {
       format: 'json',
-      content,
-      structured: Array.isArray(parsed) ? parsed : [parsed] // Ensure an array format
+      content: content,
+      structured: Array.isArray(parsed) ? parsed : [parsed]
     };
   } catch (error) {
     console.error('Error parsing JSON:', error);
     return {
       format: 'text',
-      content
+      content: content
     };
   }
 };
@@ -77,6 +78,7 @@ const parseJSON = (content: string): ParsedData => {
  * Parse Markdown content
  */
 const parseMarkdown = (content: string): ParsedData => {
+  // Basic markdown parsing - extract headers and sections
   const lines = content.split('\n');
   const structured: Record<string, any>[] = [];
 
@@ -84,24 +86,30 @@ const parseMarkdown = (content: string): ParsedData => {
   let currentH2 = '';
   let currentContent = '';
 
-  const pushContent = () => {
-    if (currentH1 && currentContent.trim()) {
-      structured.push({
-        heading: currentH1,
-        subheading: currentH2 || undefined, // Avoid empty subheading
-        content: currentContent.trim()
-      });
-    }
-  };
-
   for (const line of lines) {
     if (line.startsWith('# ')) {
-      pushContent();
+      // Save previous section if exists
+      if (currentH1 && currentContent) {
+        structured.push({
+          heading: currentH1,
+          subheading: currentH2,
+          content: currentContent.trim()
+        });
+      }
+      
       currentH1 = line.substring(2).trim();
       currentH2 = '';
       currentContent = '';
     } else if (line.startsWith('## ')) {
-      pushContent();
+      // Save previous subsection if exists
+      if (currentH1 && currentContent) {
+        structured.push({
+          heading: currentH1,
+          subheading: currentH2,
+          content: currentContent.trim()
+        });
+      }
+      
       currentH2 = line.substring(3).trim();
       currentContent = '';
     } else {
@@ -109,14 +117,19 @@ const parseMarkdown = (content: string): ParsedData => {
     }
   }
 
-  if (currentContent.trim()) {
-    pushContent(); // Ensure the last section is added
+  // Add the last section
+  if (currentH1 && currentContent) {
+    structured.push({
+      heading: currentH1,
+      subheading: currentH2,
+      content: currentContent.trim()
+    });
   }
 
   return {
     format: 'markdown',
-    content,
-    structured
+    content: content,
+    structured: structured
   };
 };
 
@@ -124,8 +137,6 @@ const parseMarkdown = (content: string): ParsedData => {
  * Generate prompt content for Anki card creation from parsed data
  */
 export const generatePromptFromParsedData = (parsedData: ParsedData): string => {
-  console.log('Final Parsed Data:', parsedData); // Debugging log
-
   switch (parsedData.format) {
     case 'csv':
       if (parsedData.content) {
@@ -134,7 +145,7 @@ export const generatePromptFromParsedData = (parsedData: ParsedData): string => 
       return parsedData.content;
 
     case 'markdown':
-      if (parsedData.structured?.length) {
+      if (parsedData.structured && parsedData.structured.length > 0) {
         return `Generate Anki flashcards from the following Markdown content:
 
 ${parsedData.structured.map(section => 
@@ -146,7 +157,7 @@ Please create concise and effective flashcards based on this content.`;
       return parsedData.content;
 
     case 'json':
-      if (parsedData.structured?.length) {
+      if (parsedData.structured && parsedData.structured.length > 0) {
         return `Generate Anki flashcards from the following JSON data:
 
 ${JSON.stringify(parsedData.structured.slice(0, 3), null, 2)}

@@ -27,6 +27,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   acceptedFileTypes = ".txt,.md,.csv"
 }) => {
   const [files, setFiles] = useState<File[]>([]);
+  // Removed unused loading state
   const [processingFile, setProcessingFile] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,21 +36,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     setError(null);
     if (event.target.files) {
       const fileList = Array.from(event.target.files);
-
-      // Filter out duplicates
-      const uniqueFiles = fileList.filter(
-        (newFile) => !files.some((existingFile) => existingFile.name === newFile.name)
-      );
-
-      if (uniqueFiles.length === 0) {
-        setError("Duplicate files are not allowed.");
-        return;
-      }
-
-      setFiles(prev => [...prev, ...uniqueFiles]);
-
-      // Reset the input to allow re-uploading the same file
-      event.target.value = "";
+      setFiles(prev => [...prev, ...fileList]);
     }
   };
 
@@ -64,9 +51,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
     try {
       const content = await readFileAsText(file);
       onFileContent(content, file.name);
-
-      // Remove the processed file from the list
-      setFiles((prev) => prev.filter((_, i) => i !== index));
     } catch (err) {
       setError(`Error reading file: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
