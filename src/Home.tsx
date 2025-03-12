@@ -30,7 +30,7 @@ const Bookmarklet = () => {
   sx={{ backgroundColor: 'white', color: 'black', borderRadius: 2 }}
   onClick={() => window.open('https://anki.j551n.com/suggest', '_blank')}
 >
-  Suggest Anki Cards
+  Bookmark :D
 </Button>
       </Box>
     </Box>
