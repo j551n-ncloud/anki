@@ -118,7 +118,7 @@ const parseMarkdown = (content: string): ParsedData => {
   }
 
   // Add the last section
-  if (currentH1 && currentContent) {
+  if (currentH1 || currentContent.trim()) {
     structured.push({
       heading: currentH1,
       subheading: currentH2,
@@ -137,37 +137,54 @@ const parseMarkdown = (content: string): ParsedData => {
  * Generate prompt content for Anki card creation from parsed data
  */
 export const generatePromptFromParsedData = (parsedData: ParsedData): string => {
-  switch (parsedData.format) {
-    case 'csv':
-      if (parsedData.content) {
-        return generateFlashcardPromptFromCSV(parsedData.content);
-      }
-      return parsedData.content;
+  if (!parsedData) {
+    console.error("No parsed data provided to generatePromptFromParsedData");
+    return "";
+  }
 
-    case 'markdown':
-      if (parsedData.structured && parsedData.structured.length > 0) {
-        return `Generate Anki flashcards from the following Markdown content:
+  try {
+    switch (parsedData.format) {
+      case 'csv':
+        if (parsedData.content) {
+          const prompt = generateFlashcardPromptFromCSV(parsedData.content);
+          console.log("Generated CSV prompt:", prompt.substring(0, 100) + "...");
+          return prompt;
+        }
+        return parsedData.content;
+
+      case 'markdown':
+        if (parsedData.structured && parsedData.structured.length > 0) {
+          const prompt = `Generate Anki flashcards from the following Markdown content:
 
 ${parsedData.structured.map(section => 
   `${section.heading}${section.subheading ? ' - ' + section.subheading : ''}:\n${section.content}`
 ).join('\n\n')}
 
 Please create concise and effective flashcards based on this content.`;
-      }
-      return parsedData.content;
+          console.log("Generated Markdown prompt:", prompt.substring(0, 100) + "...");
+          return prompt;
+        }
+        return parsedData.content;
 
-    case 'json':
-      if (parsedData.structured && parsedData.structured.length > 0) {
-        return `Generate Anki flashcards from the following JSON data:
+      case 'json':
+        if (parsedData.structured && parsedData.structured.length > 0) {
+          const prompt = `Generate Anki flashcards from the following JSON data:
 
 ${JSON.stringify(parsedData.structured.slice(0, 3), null, 2)}
 
 Please create concise and effective flashcards based on this data.`;
-      }
-      return parsedData.content;
+          console.log("Generated JSON prompt:", prompt.substring(0, 100) + "...");
+          return prompt;
+        }
+        return parsedData.content;
 
-    case 'text':
-    default:
-      return parsedData.content;
+      case 'text':
+      default:
+        console.log("Using plain text prompt");
+        return parsedData.content;
+    }
+  } catch (error) {
+    console.error("Error generating prompt from parsed data:", error);
+    return parsedData.content;
   }
 };

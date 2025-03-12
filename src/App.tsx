@@ -1,8 +1,8 @@
-import { Alert, Autocomplete, Button, Card, CardActions, CardContent, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Divider, Typography } from '@mui/material';
+import { Alert, Autocomplete, Button, Card, CardActions, CardContent, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Divider, Typography, Snackbar } from '@mui/material';
 
 import { useLocation } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
 
 import { addNote, fetchDecks, fetchTags } from './anki';
 import { suggestAnkiNotes } from './openai';
@@ -155,6 +155,8 @@ function Home() {
     const [notes, setNotes] = useState<Note[]>([]);
     const [processingFile, setProcessingFile] = useState(false);
     const [fileError, setFileError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
     const [deckName, setDeckName] = useLocalStorage("deckName", "Default");
     const [modelName, setModelName] = useState("Basic");
@@ -162,16 +164,31 @@ function Home() {
     const [prompt, setPrompt] = useState(initialPrompt);
     
     const { openAIKey } = useContext(OpenAIKeyContext);
+    const promptRef = useRef(prompt);
+    
+    // Update ref when prompt changes
+    useEffect(() => {
+        promptRef.current = prompt;
+    }, [prompt]);
 
     const { isLoading, mutate, error: openAIError } = useMutation({
         mutationFn: (data: Options) => suggestAnkiNotes(openAIKey, data, notes),
         onSuccess: (newNotes) => {
-            setNotes(notes => [...notes, ...newNotes]);
+            if (newNotes && newNotes.length > 0) {
+                setNotes(notes => [...notes, ...newNotes]);
+                setSuccessMessage(`Successfully generated ${newNotes.length} new flashcards`);
+            } else {
+                setFileError("No flashcards could be generated. Please try a different prompt or file.");
+            }
+        },
+        onError: (error) => {
+            console.error("Error generating flashcards:", error);
+            setFileError(`Error generating flashcards: ${error instanceof Error ? error.message : String(error)}`);
         }
     });
 
     // Handle file upload content
-    const handleFileContent = (content: string, fileName: string) => {
+    const handleFileContent = async (content: string, fileName: string) => {
         try {
             setProcessingFile(true);
             setFileError(null);
@@ -187,15 +204,39 @@ function Home() {
             const generatedPrompt = generatePromptFromParsedData(parsedData);
             
             console.log(`File parsed successfully: ${parsedData.format} format`);
+            console.log(`Generated prompt (first 100 chars): ${generatedPrompt.substring(0, 100)}...`);
             
-            // Set the generated prompt
+            // Set the generated prompt and trigger card generation
             setPrompt(generatedPrompt);
-            setProcessingFile(false);
+            
+            // Wait for prompt to be updated using setTimeout
+            setTimeout(() => {
+                // Check if prompt was updated correctly
+                console.log("Current prompt ref:", promptRef.current.substring(0, 100));
+                
+                if (generatedPrompt && generatedPrompt.trim().length > 0) {
+                    mutate({ 
+                        deckName, 
+                        modelName, 
+                        tags: currentTags, 
+                        prompt: generatedPrompt 
+                    });
+                    setSuccessMessage(`File processed: ${fileName}`);
+                } else {
+                    setFileError(`Could not generate a valid prompt from ${fileName}`);
+                }
+            }, 100);
         } catch (error) {
             console.error("Error processing file:", error);
             setFileError(`Error processing file: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
             setProcessingFile(false);
         }
+    };
+
+    // Handle file list changes
+    const handleFileListChange = (files: File[]) => {
+        setUploadedFiles(files);
     };
 
     // If there's an initial prompt param, kick it off immediately
@@ -204,6 +245,11 @@ function Home() {
             mutate({ deckName, modelName, tags: currentTags, prompt: initialPrompt });
         }
     }, []);
+
+    // Close the success notification
+    const handleCloseSuccess = () => {
+        setSuccessMessage(null);
+    };
 
     return (
         <Grid container sx={{ padding: "25px", maxWidth: 1200 }} spacing={4} justifyContent="flex-start"
@@ -216,7 +262,7 @@ function Home() {
                 <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to AI Provider. Ensure you have entered your OpenAI key correctly.</Alert>
                 : <></>}
             {fileError ?
-                <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>{fileError}</Alert>
+                <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px", marginBottom: "10px" }}>{fileError}</Alert>
                 : <></>}
                 
             <Grid container item direction="column" spacing={2} justifyContent="flex-start">
@@ -282,6 +328,7 @@ function Home() {
                     <FileUpload 
                         onFileContent={(content, fileName) => handleFileContent(content, fileName)}
                         acceptedFileTypes=".txt,.md,.csv,.json"
+                        onFileListChange={handleFileListChange}
                     />
                 </Grid>
                 
@@ -310,8 +357,25 @@ function Home() {
                 </Grid>
             </Grid>
             <Grid container item>
-                {(isLoading || processingFile) && <CircularProgress />}
+                {(isLoading || processingFile) && (
+                    <Box display="flex" flexDirection="column" alignItems="center" mt={2}>
+                        <CircularProgress />
+                        <Typography variant="body2" color="textSecondary" mt={1}>
+                            {processingFile ? "Processing file..." : "Generating flashcards..."}
+                        </Typography>
+                    </Box>
+                )}
             </Grid>
+            
+            {/* Display card count */}
+            {notes.filter(n => !n.trashed && !n.created).length > 0 && (
+                <Grid container item>
+                    <Typography variant="subtitle1" gutterBottom>
+                        Generated Cards ({notes.filter(n => !n.trashed && !n.created).length})
+                    </Typography>
+                </Grid>
+            )}
+            
             <Grid container item spacing={2} alignItems="stretch">
                 {notes
                     .filter(n => !n.trashed)
@@ -329,6 +393,13 @@ function Home() {
                         />
                     )}
             </Grid>
+            
+            <Snackbar
+                open={!!successMessage}
+                autoHideDuration={6000}
+                onClose={handleCloseSuccess}
+                message={successMessage}
+            />
         </Grid>
     );
 }

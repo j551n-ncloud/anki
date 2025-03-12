@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Button, 
   Box, 
@@ -20,28 +20,58 @@ import FileUploadIcon from '@mui/icons-material/FileUpload';
 interface FileUploadProps {
   onFileContent: (content: string, fileName: string) => void;
   acceptedFileTypes?: string;
+  onFileListChange?: (files: File[]) => void; // Add callback for file list changes
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ 
   onFileContent, 
-  acceptedFileTypes = ".txt,.md,.csv"
+  acceptedFileTypes = ".txt,.md,.csv",
+  onFileListChange
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  // Removed unused loading state
   const [processingFile, setProcessingFile] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Notify parent component when files change
+  useEffect(() => {
+    if (onFileListChange) {
+      onFileListChange(files);
+    }
+  }, [files, onFileListChange]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     if (event.target.files) {
       const fileList = Array.from(event.target.files);
-      setFiles(prev => [...prev, ...fileList]);
+      
+      // Check for duplicates
+      const duplicates: string[] = [];
+      const newFiles = fileList.filter(newFile => {
+        const isDuplicate = files.some(existingFile => 
+          existingFile.name === newFile.name && existingFile.size === newFile.size
+        );
+        if (isDuplicate) {
+          duplicates.push(newFile.name);
+        }
+        return !isDuplicate;
+      });
+      
+      if (duplicates.length > 0) {
+        setError(`Skipped duplicate file(s): ${duplicates.join(', ')}`);
+      }
+      
+      setFiles(prev => [...prev, ...newFiles]);
+    }
+    
+    // Clear the input value to allow uploading the same file again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
   const handleRemoveFile = (index: number) => {
-    setFiles(files.filter((_, i) => i !== index));
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleProcessFile = async (file: File, index: number) => {
@@ -80,6 +110,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
     return extension;
   };
 
+  const clearAllFiles = () => {
+    setFiles([]);
+    setError(null);
+  };
+
   return (
     <Box sx={{ mt: 3, mb: 3 }}>
       <input
@@ -90,14 +125,25 @@ const FileUpload: React.FC<FileUploadProps> = ({
         accept={acceptedFileTypes}
         multiple
       />
-      <Button
-        variant="contained"
-        onClick={() => fileInputRef.current?.click()}
-        startIcon={<FileUploadIcon />}
-        sx={{ mb: 2 }}
-      >
-        Upload Files
-      </Button>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Button
+          variant="contained"
+          onClick={() => fileInputRef.current?.click()}
+          startIcon={<FileUploadIcon />}
+        >
+          Upload Files
+        </Button>
+        
+        {files.length > 0 && (
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={clearAllFiles}
+          >
+            Clear All
+          </Button>
+        )}
+      </Box>
       
       <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
         Supported file types: {acceptedFileTypes}
@@ -112,7 +158,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {files.length > 0 && (
         <Paper elevation={2} sx={{ p: 2, mt: 2 }}>
           <Typography variant="subtitle1" gutterBottom>
-            Uploaded Files
+            Uploaded Files ({files.length})
           </Typography>
           <List dense>
             {files.map((file, index) => (
