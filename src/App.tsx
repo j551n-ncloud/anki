@@ -2,7 +2,7 @@ import { Alert, Autocomplete, Button, Box, Card, CardActions, CardContent, Circu
 
 import { useLocation } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useContext, useState, useEffect, useRef } from 'react';
+import { useContext, useState, useEffect } from 'react';
 
 import { addNote, fetchDecks, fetchTags } from './anki';
 import { suggestAnkiNotes } from './openai';
@@ -156,7 +156,6 @@ function Home() {
     const [processingFile, setProcessingFile] = useState(false);
     const [fileError, setFileError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    // const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
     const [deckName, setDeckName] = useLocalStorage("deckName", "Default");
     const [modelName, setModelName] = useState("Basic");
@@ -164,12 +163,6 @@ function Home() {
     const [prompt, setPrompt] = useState(initialPrompt);
     
     const { openAIKey } = useContext(OpenAIKeyContext);
-    const promptRef = useRef(prompt);
-    
-    // Update ref when prompt changes
-    useEffect(() => {
-        promptRef.current = prompt;
-    }, [prompt]);
 
     const { isLoading, mutate, error: openAIError } = useMutation({
         mutationFn: (data: Options) => suggestAnkiNotes(openAIKey, data, notes),
@@ -204,17 +197,15 @@ function Home() {
             const generatedPrompt = generatePromptFromParsedData(parsedData);
             
             console.log(`File parsed successfully: ${parsedData.format} format`);
-            console.log(`Generated prompt (first 100 chars): ${generatedPrompt.substring(0, 100)}...`);
+            console.log(`Generated prompt length: ${generatedPrompt.length} characters`);
             
-            // Set the generated prompt and trigger card generation
-            setPrompt(generatedPrompt);
-            
-            // Wait for prompt to be updated using setTimeout
-            setTimeout(() => {
-                // Check if prompt was updated correctly
-                console.log("Current prompt ref:", promptRef.current.substring(0, 100));
+            if (generatedPrompt && generatedPrompt.trim().length > 0) {
+                // Set the prompt state
+                setPrompt(generatedPrompt);
                 
-                if (generatedPrompt && generatedPrompt.trim().length > 0) {
+                // Use setTimeout to ensure state update completes
+                setTimeout(() => {
+                    // Use the generatedPrompt directly rather than relying on the state value
                     mutate({ 
                         deckName, 
                         modelName, 
@@ -222,10 +213,10 @@ function Home() {
                         prompt: generatedPrompt 
                     });
                     setSuccessMessage(`File processed: ${fileName}`);
-                } else {
-                    setFileError(`Could not generate a valid prompt from ${fileName}`);
-                }
-            }, 100);
+                }, 100);
+            } else {
+                setFileError(`Could not generate a valid prompt from ${fileName}`);
+            }
         } catch (error) {
             console.error("Error processing file:", error);
             setFileError(`Error processing file: ${error instanceof Error ? error.message : String(error)}`);
@@ -236,16 +227,28 @@ function Home() {
 
     // Handle file list changes
     const handleFileListChange = (files: File[]) => {
-        // We could track uploaded files here if needed
         console.log(`File list updated: ${files.length} files`);
     };
 
     // If there's an initial prompt param, kick it off immediately
     useEffect(() => {
-        if (initialPrompt !== "") {
+        if (initialPrompt && initialPrompt.trim() !== "") {
+            console.log("Initial prompt found, generating cards...");
             mutate({ deckName, modelName, tags: currentTags, prompt: initialPrompt });
         }
     }, []);
+
+    // Manual card generation handler
+    const handleGenerateCards = () => {
+        if (!prompt || prompt.trim() === "") {
+            setFileError("Please enter a prompt before generating cards.");
+            return;
+        }
+        
+        console.log("Generating cards with prompt:", prompt.substring(0, 100) + "...");
+        setFileError(null);
+        mutate({ deckName, modelName, tags: currentTags, prompt });
+    };
 
     // Close the success notification
     const handleCloseSuccess = () => {
@@ -327,7 +330,7 @@ function Home() {
                         Upload files to generate flashcards from their content
                     </Typography>
                     <FileUpload 
-                        onFileContent={(content, fileName) => handleFileContent(content, fileName)}
+                        onFileContent={handleFileContent}
                         acceptedFileTypes=".txt,.md,.csv,.json"
                         onFileListChange={handleFileListChange}
                     />
@@ -344,6 +347,7 @@ function Home() {
                             multiline
                             value={prompt}
                             onChange={e => setPrompt(e.target.value)}
+                            placeholder="Enter text to generate flashcards or use the file upload above"
                         />
                     </FormControl>
                 </Grid>
@@ -352,7 +356,8 @@ function Home() {
                         variant="contained"
                         color="primary"
                         disabled={isLoading || processingFile || !prompt.trim()}
-                        onClick={(_) => mutate({ deckName, modelName, tags: currentTags, prompt })}>
+                        onClick={handleGenerateCards}
+                    >
                         Suggest cards
                     </Button>
                 </Grid>

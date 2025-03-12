@@ -1,127 +1,107 @@
 import Papa from 'papaparse';
 
-/**
- * Interface for CSV data
- */
-export interface CSVData {
+interface CSVParseResult {
   data: Array<Record<string, any>>;
   headers: string[];
-  rowCount: number;
 }
 
 /**
- * Parse CSV string to structured data
- * @param csvContent CSV content as string
- * @returns Structured CSV data
+ * Parse CSV string into structured data
+ * @param csvString The CSV content as a string
+ * @returns Object containing parsed data and headers
  */
-export const parseCSV = (csvContent: string): CSVData => {
-  const result = Papa.parse<Record<string, any>>(csvContent, {
-    header: true,
-    skipEmptyLines: true,
-    dynamicTyping: true
-  });
+export const parseCSV = (csvString: string): CSVParseResult => {
+  console.log("Parsing CSV...");
+  try {
+    // Use Papa Parse for robust CSV parsing
+    const result = Papa.parse(csvString, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true,
+      trimHeaders: true,
+    });
 
-  return {
-    data: result.data || [],
-    headers: result.meta.fields || [],
-    rowCount: result.data ? result.data.length : 0
-  };
+    // Clean up headers - remove whitespace and empty headers
+    const headers = result.meta.fields || [];
+    const cleanedHeaders = headers.map(header => header.trim());
+
+    // Transform the data to use the cleaned headers
+    const data = result.data as Array<Record<string, any>>;
+    
+    console.log(`CSV parsing complete: ${data.length} rows, ${cleanedHeaders.length} columns`);
+    
+    return {
+      data,
+      headers: cleanedHeaders
+    };
+  } catch (error) {
+    console.error("Error parsing CSV:", error);
+    return {
+      data: [],
+      headers: []
+    };
+  }
 };
 
 /**
- * Convert CSV data to flashcard prompts
- * @param csvData Parsed CSV data
- * @returns Array of prompt strings for flashcards
+ * Generate a prompt for creating flashcards from CSV content
+ * @param csvString The CSV content as a string
+ * @returns A string prompt for the AI to generate flashcards
  */
-export const csvToFlashcardPrompts = (csvData: CSVData): string[] => {
-  const { data, headers } = csvData;
-  
-  // If we have columns that look like question/answer pairs
-  const questionHeaders = headers.filter(h => 
-    h.toLowerCase().includes('question') || 
-    h.toLowerCase().includes('front')
-  );
-  
-  const answerHeaders = headers.filter(h => 
-    h.toLowerCase().includes('answer') || 
-    h.toLowerCase().includes('back')
-  );
-
-  if (questionHeaders.length > 0 && answerHeaders.length > 0) {
-    return data.map(row => {
-      const question = row[questionHeaders[0]];
-      const answer = row[answerHeaders[0]];
-      return `Front: ${question}\nBack: ${answer}`;
+export const generateFlashcardPromptFromCSV = (csvString: string): string => {
+  try {
+    // Parse the CSV data
+    const { data, headers } = parseCSV(csvString);
+    
+    if (data.length === 0 || headers.length === 0) {
+      return "Please create flashcards from this data. The format couldn't be automatically detected.";
+    }
+    
+    // Take a sample of the data (up to 5 rows) for the prompt
+    const sampleRows = data.slice(0, 5);
+    const sampleData = sampleRows.map(row => {
+      const rowData: Record<string, any> = {};
+      headers.forEach(header => {
+        rowData[header] = row[header];
+      });
+      return rowData;
     });
-  }
-
-  // If we have a term/definition structure
-  const termHeaders = headers.filter(h => 
-    h.toLowerCase().includes('term') || 
-    h.toLowerCase().includes('concept') ||
-    h.toLowerCase().includes('word')
-  );
-  
-  const definitionHeaders = headers.filter(h => 
-    h.toLowerCase().includes('definition') || 
-    h.toLowerCase().includes('description') ||
-    h.toLowerCase().includes('meaning')
-  );
-
-  if (termHeaders.length > 0 && definitionHeaders.length > 0) {
-    return data.map(row => {
-      const term = row[termHeaders[0]];
-      const definition = row[definitionHeaders[0]];
-      return `Front: ${term}\nBack: ${definition}`;
+    
+    // Generate a descriptive prompt based on the data structure
+    let prompt = `Generate Anki flashcards from the following CSV data:\n\n`;
+    
+    // Add column description
+    prompt += `This CSV file has ${headers.length} columns: ${headers.join(', ')}\n\n`;
+    
+    // Add sample data
+    prompt += `Here are ${sampleRows.length} sample rows from the data:\n`;
+    sampleData.forEach((row, index) => {
+      prompt += `Row ${index + 1}:\n`;
+      headers.forEach(header => {
+        prompt += `  ${header}: ${row[header]}\n`;
+      });
+      prompt += '\n';
     });
+    
+    // Add specific instructions based on column structure
+    if (headers.length === 2) {
+      prompt += `This data appears to have a two-column structure. Consider using the first column as the question/front of the card and the second column as the answer/back of the card.\n\n`;
+    } else if (headers.some(h => h.toLowerCase().includes('question') || h.toLowerCase().includes('term'))) {
+      const questionColumns = headers.filter(h => h.toLowerCase().includes('question') || h.toLowerCase().includes('term'));
+      const answerColumns = headers.filter(h => h.toLowerCase().includes('answer') || h.toLowerCase().includes('definition'));
+      
+      prompt += `This data appears to have question/answer columns. Consider using ${questionColumns.join(', ')} for card fronts and ${answerColumns.length > 0 ? answerColumns.join(', ') : 'other columns'} for card backs.\n\n`;
+    }
+    
+    // Add final instruction
+    prompt += `Please create concise and effective flashcards based on this data. Generate at least ${Math.min(10, data.length)} cards from the complete dataset.\n`;
+    prompt += `Each card should have a clear question on the front and a comprehensive answer on the back.`;
+    
+    console.log("Generated CSV flashcard prompt length:", prompt.length);
+    return prompt;
+    
+  } catch (error) {
+    console.error("Error generating prompt from CSV:", error);
+    return "Please create flashcards from this data. The format couldn't be automatically processed due to an error.";
   }
-
-  // If no clear patterns, use the first two columns
-  if (headers.length >= 2) {
-    return data.map(row => {
-      const col1 = row[headers[0]];
-      const col2 = row[headers[1]];
-      return `Front: ${col1}\nBack: ${col2}`;
-    });
-  }
-
-  // Fallback for single column
-  if (headers.length === 1) {
-    return data.map(row => {
-      const content = row[headers[0]];
-      return `Front: What is ${content}?\nBack: (Generated from CSV, please edit this answer)`;
-    });
-  }
-
-  return [];
-};
-
-/**
- * Generate flashcard prompt text from CSV content
- * @param csvContent Raw CSV content
- * @returns Prompt text for generating flashcards
- */
-export const generateFlashcardPromptFromCSV = (csvContent: string): string => {
-  const csvData = parseCSV(csvContent);
-  
-  // Create a summary of the CSV data
-  const summary = `CSV data with ${csvData.headers.length} columns (${csvData.headers.join(', ')}) and ${csvData.rowCount} rows.`;
-  
-  // Sample some rows to show the data structure
-  const sampleRowCount = Math.min(3, csvData.data.length);
-  const samples = csvData.data
-    .slice(0, sampleRowCount)
-    .map(row => 
-      csvData.headers.map(header => `${header}: ${row[header]}`).join(', ')
-    )
-    .join('\n');
-  
-  return `Please create Anki flashcards based on the following CSV data:
-
-${summary}
-
-Sample data:
-${samples}
-
-The cards should be concise but contextual, with clear questions and answers.`;
 };
