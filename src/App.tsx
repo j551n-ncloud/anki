@@ -1,4 +1,4 @@
-import { Alert, Autocomplete, Button, Card, CardActions, CardContent, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { Alert, Autocomplete, Button, Card, CardActions, CardContent, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Divider, Typography } from '@mui/material';
 
 import { useLocation } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -8,6 +8,8 @@ import { addNote, fetchDecks, fetchTags } from './anki';
 import { suggestAnkiNotes } from './openai';
 import { OpenAIKeyContext } from './OpenAIKeyContext';
 import useLocalStorage from './useLocalStorage';
+import FileUpload from './FileUpload';
+import { parseFileContent, generatePromptFromParsedData, ParsedData } from './fileParser';
 
 interface Note {
     modelName: string;
@@ -29,11 +31,12 @@ const NoteComponent: React.FC<CardProps> = ({ note, onTrash, onCreate }) => {
     const [currentNote, setCurrentNote] = useState(note);
     const { modelName, deckName, fields, tags, trashed, created } = currentNote;
 
-    const handleFieldChange = (event: React.ChangeEvent<{ name: string, value: string }>) => {
-        if (event.target.name) {
+    const handleFieldChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = event.target;
+        if (name) {
             setCurrentNote(prev => ({
                 ...prev,
-                fields: { ...prev.fields, [event.target.name]: event.target.value }
+                fields: { ...prev.fields, [name]: value }
             }));
         }
     };
@@ -90,7 +93,7 @@ const NoteComponent: React.FC<CardProps> = ({ note, onTrash, onCreate }) => {
                             <TextField
                                 fullWidth
                                 label="Front"
-                                defaultValue={fields.Front}
+                                value={fields.Front}
                                 multiline
                                 onChange={handleFieldChange}
                                 name="Front"
@@ -100,7 +103,7 @@ const NoteComponent: React.FC<CardProps> = ({ note, onTrash, onCreate }) => {
                             <TextField
                                 fullWidth
                                 label="Back"
-                                defaultValue={fields.Back}
+                                value={fields.Back}
                                 multiline
                                 onChange={handleFieldChange}
                                 name="Back"
@@ -134,6 +137,9 @@ function Home() {
     const query = new URLSearchParams(location.search);
 
     const promptParam = query.get('prompt') || "";
+    const textParam = query.get('text') || "";
+
+    const initialPrompt = textParam || promptParam || "";
 
     const { data: decks, error: ankiError } = useQuery({
         queryFn: fetchDecks,
@@ -146,30 +152,47 @@ function Home() {
         queryKey: ["tags"],
     });
 
-    const [notes, setNotes] = useState<Note[]>([])
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [processingFile, setProcessingFile] = useState(false);
+    const [fileError, setFileError] = useState<string | null>(null);
 
     const [deckName, setDeckName] = useLocalStorage("deckName", "Default");
-    const modelName = "Basic";
-
+    const [modelName, setModelName] = useState("Basic");
     const [currentTags, setCurrentTags] = useLocalStorage<string[]>("tags", []);
-
+    const [prompt, setPrompt] = useState(initialPrompt);
+    
     const { openAIKey } = useContext(OpenAIKeyContext);
 
     const { isLoading, mutate, error: openAIError } = useMutation({
         mutationFn: (data: Options) => suggestAnkiNotes(openAIKey, data, notes),
         onSuccess: (newNotes) => {
-            setNotes(notes => [...notes, ...newNotes])
+            setNotes(notes => [...notes, ...newNotes]);
         }
     });
 
-    const [prompt, setPrompt] = useState(promptParam);
+    // Handle file upload content
+    const handleFileContent = (content: string, fileName: string) => {
+        try {
+            setProcessingFile(true);
+            setFileError(null);
+            
+            const parsedData = parseFileContent(content, fileName);
+            const generatedPrompt = generatePromptFromParsedData(parsedData);
+            
+            setPrompt(generatedPrompt);
+            setProcessingFile(false);
+        } catch (error) {
+            setFileError(`Error processing file: ${error instanceof Error ? error.message : String(error)}`);
+            setProcessingFile(false);
+        }
+    };
 
     // If there's an initial prompt param, kick it off immediately
     useEffect(() => {
-        if (promptParam !== "") {
-            mutate({ deckName, modelName, tags: currentTags, prompt: promptParam })
+        if (initialPrompt !== "") {
+            mutate({ deckName, modelName, tags: currentTags, prompt: initialPrompt });
         }
-    }, [promptParam])
+    }, []);
 
     return (
         <Grid container sx={{ padding: "25px", maxWidth: 1200 }} spacing={4} justifyContent="flex-start"
@@ -181,7 +204,16 @@ function Home() {
             {openAIError ?
                 <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to AI Provider. Ensure you have entered your OpenAI key correctly.</Alert>
                 : <></>}
+            {fileError ?
+                <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>{fileError}</Alert>
+                : <></>}
+                
             <Grid container item direction="column" spacing={2} justifyContent="flex-start">
+                <Grid item>
+                    <Typography variant="h6" gutterBottom>
+                        Create Cards from Text
+                    </Typography>
+                </Grid>
                 <Grid item>
                     <FormControl fullWidth>
                         <InputLabel id="deck-label">Deck</InputLabel>
@@ -199,6 +231,22 @@ function Home() {
                 </Grid>
                 <Grid item>
                     <FormControl fullWidth>
+                        <InputLabel id="model-label">Note type</InputLabel>
+                        <Select
+                            labelId="model-label"
+                            label="Note type"
+                            id="model"
+                            value={modelName}
+                            onChange={e => { e.target.value && setModelName(e.target.value) }}
+                        >
+                            <MenuItem value="Basic">Basic</MenuItem>
+                            <MenuItem value="Basic (and reversed card)">Basic (and reversed card)</MenuItem>
+                            <MenuItem value="Cloze">Cloze</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid item>
+                    <FormControl fullWidth>
                         <Autocomplete
                             id="tags"
                             multiple
@@ -211,6 +259,23 @@ function Home() {
                         />
                     </FormControl>
                 </Grid>
+                
+                {/* Add the file upload component */}
+                <Grid item>
+                    <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                        Upload Files
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                        Upload files to generate flashcards from their content
+                    </Typography>
+                    <FileUpload 
+                        onFileContent={(content, fileName) => handleFileContent(content, fileName)}
+                        acceptedFileTypes=".txt,.md,.csv,.json"
+                    />
+                </Grid>
+                
+                <Divider sx={{ my: 2 }} />
+                
                 <Grid item>
                     <FormControl fullWidth>
                         <TextField
@@ -227,14 +292,14 @@ function Home() {
                     <Button
                         variant="contained"
                         color="primary"
-                        disabled={isLoading}
+                        disabled={isLoading || processingFile || !prompt.trim()}
                         onClick={(_) => mutate({ deckName, modelName, tags: currentTags, prompt })}>
                         Suggest cards
                     </Button>
                 </Grid>
             </Grid>
             <Grid container item>
-                {isLoading && <CircularProgress />}
+                {(isLoading || processingFile) && <CircularProgress />}
             </Grid>
             <Grid container item spacing={2} alignItems="stretch">
                 {notes
@@ -257,4 +322,4 @@ function Home() {
     );
 }
 
-export default Home
+export default Home;
