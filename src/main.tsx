@@ -4,22 +4,37 @@ import App from './App.tsx'
 import { Outlet, RouterProvider, createBrowserRouter, Link } from 'react-router-dom'
 import Settings from './Settings.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AppBar, Toolbar, Typography, Container } from '@mui/material';
+import { AppBar, Toolbar, Typography, Container, createTheme, ThemeProvider } from '@mui/material';
 import OpenAIKeyContextProvider from './OpenAIKeyContext';
 import Home from './Home.tsx';
+
+// Create a custom theme with grey as the primary color
+const theme = createTheme({
+    palette: {
+        primary: {
+            main: '#808080', // Grey color
+        },
+    },
+});
 
 function Root() {
     return (
         <OpenAIKeyContextProvider>
-            <AppBar position="static">
-                <Toolbar>
-                    <Typography variant="h6" component={Link} to="/" color="inherit" sx={{ textDecoration: 'none' }}>anki card creator</Typography>
-                    <Typography sx={{ marginLeft: 4, textDecoration: 'none' }} component={Link} to="/settings" color="inherit">Settings</Typography>
-                </Toolbar>
-            </AppBar>
-            <Container>
-                <Outlet />
-            </Container>
+            <ThemeProvider theme={theme}>
+                <AppBar position="static">
+                    <Toolbar>
+                        <Typography variant="h6" component={Link} to="/" color="inherit" sx={{ textDecoration: 'none' }}>
+                            anki card creator
+                        </Typography>
+                        <Typography sx={{ marginLeft: 4, textDecoration: 'none' }} component={Link} to="/settings" color="inherit">
+                            Settings
+                        </Typography>
+                    </Toolbar>
+                </AppBar>
+                <Container>
+                    <Outlet />
+                </Container>
+            </ThemeProvider>
         </OpenAIKeyContextProvider>
     );
 }

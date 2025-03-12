@@ -5,15 +5,24 @@ function useLocalStorage<T>(
     fallbackState: T
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
     const [value, setValue] = useState<T>(() => {
-        const storedValue = localStorage.getItem(storageKey);
-        if (storedValue !== null) {
-            return JSON.parse(storedValue);
+        try {
+            const storedValue = localStorage.getItem(storageKey);
+            if (storedValue !== null) {
+                return JSON.parse(storedValue); // Try parsing the stored value
+            }
+            return fallbackState; // Return fallback if not found
+        } catch (error) {
+            console.error(`Error parsing localStorage key "${storageKey}":`, error);
+            return fallbackState; // Return fallback state in case of error
         }
-        return fallbackState;
     });
 
     useEffect(() => {
-        localStorage.setItem(storageKey, JSON.stringify(value));
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(value)); // Set new value in localStorage
+        } catch (error) {
+            console.error(`Error setting localStorage key "${storageKey}":`, error);
+        }
     }, [value, storageKey]);
 
     return [value, setValue];

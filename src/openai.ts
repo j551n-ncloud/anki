@@ -40,8 +40,6 @@ Front: Which Roman emperor divided the Roman empire?
 Back: Diocletian`;
 };
 
-
-
 interface Options {
     deckName: string;
     modelName: string;
@@ -55,7 +53,7 @@ export async function suggestAnkiNotes(
     notes: Note[],
 ): Promise<any> {
     const body = {
-        model: 'gpt-4',
+        model: 'gpt-3.5-turbo',
         messages: [
             {
                 role: 'system',
@@ -67,7 +65,7 @@ export async function suggestAnkiNotes(
             }
         ],
     };
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('https://api.helmholtz-blablador.fz-juelich.de/api/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -76,11 +74,11 @@ export async function suggestAnkiNotes(
         body: JSON.stringify(body),
     });
 
-    if (!res.ok) throw new Error('OpenAI API request failed');
+    if (!res.ok) throw new Error('Helmholtz Blablador API request failed');
     const data = await res.json();
 
     if (!data.choices || !data.choices.length) {
-        throw new Error('No completion choices were returned from OpenAI');
+        throw new Error('No completion choices were returned from Helmholtz Blablador');
     }
 
     const noteContent = data.choices[0].message.content;

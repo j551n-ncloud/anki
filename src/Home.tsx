@@ -7,6 +7,7 @@ const Bookmarklet = () => {
       <Typography variant="h6">Bookmarklet</Typography>
       <Typography>We offer a bookmarklet so you can quickly highlight some text in your browser and go directly to suggesting cards. Drag the following link to your bookmarks:</Typography>
       <a id="bookmarklet" href="javascript:(function() { var selection = window.getSelection().toString(); var url = 'https://anki-card-creator.pages.dev/suggest?prompt=' + encodeURIComponent(selection); window.open(url, '_blank'); })();">Suggest Anki cards</a>
+      <Typography>Created By Johannes Nguyen</Typography>
     </div>
   );
 };
@@ -41,7 +42,7 @@ function Home() {
                 3. Set up Anki Connect to have CORS enabled for the route. Go to Tools -{'>'} Add-ons -{'>'} Select AnkiConnect -{'>'} Click Config -{'>'} Add "anki-card-creator.pages.dev" to your webCorsOriginList
             </Typography>
             <Typography variant="body1" sx={{ marginTop: 2 }}>
-                4. Create and add an OpenAI API key to the Settings page
+                4. Create and add an API key to the Settings page
             </Typography>
 
             <Typography>

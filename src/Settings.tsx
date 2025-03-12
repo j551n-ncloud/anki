@@ -15,10 +15,10 @@ function Settings() {
                     <Typography variant="h4" sx={{ mt: 2 }}>Settings</Typography>
                 </Grid>
                 <Grid item>
-                    <Typography variant="h6">OpenAI Settings</Typography>
+                    <Typography variant="h6">AI Settings</Typography>
                 </Grid>
                 <Grid item>
-                    <Typography>To generate your OpenAI API key, please follow the instructions on <Link href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer">this page</Link>.</Typography>
+                    <Typography>To generate your AI API key, please follow the instructions on <Link href="https://sdlaml.pages.jsc.fz-juelich.de/ai/guides/blablador_api_access/" target="_blank" rel="noopener noreferrer">this page</Link>.</Typography>
                 </Grid>
                 <Grid item>
                     <TextField
