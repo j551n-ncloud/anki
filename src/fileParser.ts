@@ -38,10 +38,9 @@ export const parseFileContent = (fileContent: string, fileName: string): ParsedD
 const parseCSV = (content: string): ParsedData => {
   try {
     const csvData = parseCSVUtil(content);
-    
     return {
       format: 'csv',
-      content: content,
+      content,
       structured: csvData.data,
       headers: csvData.headers
     };
@@ -49,7 +48,7 @@ const parseCSV = (content: string): ParsedData => {
     console.error('Error parsing CSV:', error);
     return {
       format: 'text',
-      content: content
+      content
     };
   }
 };
@@ -62,14 +61,14 @@ const parseJSON = (content: string): ParsedData => {
     const parsed = JSON.parse(content);
     return {
       format: 'json',
-      content: content,
-      structured: Array.isArray(parsed) ? parsed : [parsed]
+      content,
+      structured: Array.isArray(parsed) ? parsed : [parsed] // Ensure an array format
     };
   } catch (error) {
     console.error('Error parsing JSON:', error);
     return {
       format: 'text',
-      content: content
+      content
     };
   }
 };
@@ -78,7 +77,6 @@ const parseJSON = (content: string): ParsedData => {
  * Parse Markdown content
  */
 const parseMarkdown = (content: string): ParsedData => {
-  // Basic markdown parsing - extract headers and sections
   const lines = content.split('\n');
   const structured: Record<string, any>[] = [];
 
@@ -86,30 +84,24 @@ const parseMarkdown = (content: string): ParsedData => {
   let currentH2 = '';
   let currentContent = '';
 
+  const pushContent = () => {
+    if (currentH1 && currentContent.trim()) {
+      structured.push({
+        heading: currentH1,
+        subheading: currentH2 || undefined, // Avoid empty subheading
+        content: currentContent.trim()
+      });
+    }
+  };
+
   for (const line of lines) {
     if (line.startsWith('# ')) {
-      // Save previous section if exists
-      if (currentH1 && currentContent) {
-        structured.push({
-          heading: currentH1,
-          subheading: currentH2,
-          content: currentContent.trim()
-        });
-      }
-      
+      pushContent();
       currentH1 = line.substring(2).trim();
       currentH2 = '';
       currentContent = '';
     } else if (line.startsWith('## ')) {
-      // Save previous subsection if exists
-      if (currentH1 && currentContent) {
-        structured.push({
-          heading: currentH1,
-          subheading: currentH2,
-          content: currentContent.trim()
-        });
-      }
-      
+      pushContent();
       currentH2 = line.substring(3).trim();
       currentContent = '';
     } else {
@@ -117,19 +109,12 @@ const parseMarkdown = (content: string): ParsedData => {
     }
   }
 
-  // Add the last section
-  if (currentH1 && currentContent) {
-    structured.push({
-      heading: currentH1,
-      subheading: currentH2,
-      content: currentContent.trim()
-    });
-  }
+  pushContent(); // Ensure the last section is added
 
   return {
     format: 'markdown',
-    content: content,
-    structured: structured
+    content,
+    structured
   };
 };
 
