@@ -9,7 +9,7 @@ import { suggestAnkiNotes } from './openai';
 import { OpenAIKeyContext } from './OpenAIKeyContext';
 import useLocalStorage from './useLocalStorage';
 import FileUpload from './FileUpload';
-import { parseFileContent, generatePromptFromParsedData, ParsedData } from './fileParser';
+import { parseFileContent, generatePromptFromParsedData } from './fileParser';
 
 interface Note {
     modelName: string;

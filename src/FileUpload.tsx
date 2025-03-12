@@ -28,6 +28,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+  const [processingFile, setProcessingFile] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,8 +44,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
     setFiles(files.filter((_, i) => i !== index));
   };
 
-  const handleProcessFile = async (file: File) => {
-    setLoading(true);
+  const handleProcessFile = async (file: File, index: number) => {
+    setProcessingFile(index);
     setError(null);
     
     try {
@@ -53,7 +54,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     } catch (err) {
       setError(`Error reading file: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setLoading(false);
+      setProcessingFile(null);
     }
   };
 
@@ -72,6 +73,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
       };
       reader.readAsText(file);
     });
+  };
+
+  const getFileTypeLabel = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+    return extension;
   };
 
   return (
@@ -132,7 +138,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       {`${(file.size / 1024).toFixed(2)} KB`}
                       <Chip 
                         size="small" 
-                        label={file.name.split('.').pop()?.toUpperCase() || 'FILE'} 
+                        label={getFileTypeLabel(file.name)} 
                         color="primary" 
                         variant="outlined"
                         sx={{ ml: 1 }}
@@ -143,11 +149,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 <Button 
                   variant="outlined" 
                   size="small"
-                  onClick={() => handleProcessFile(file)}
-                  disabled={loading}
+                  onClick={() => handleProcessFile(file, index)}
+                  disabled={processingFile !== null}
                   sx={{ ml: 2 }}
                 >
-                  {loading ? <CircularProgress size={20} /> : 'Process'}
+                  {processingFile === index ? <CircularProgress size={20} /> : 'Process'}
                 </Button>
               </ListItem>
             ))}

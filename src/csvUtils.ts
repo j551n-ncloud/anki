@@ -15,17 +15,16 @@ export interface CSVData {
  * @returns Structured CSV data
  */
 export const parseCSV = (csvContent: string): CSVData => {
-  const result = Papa.parse(csvContent, {
+  const result = Papa.parse<Record<string, any>>(csvContent, {
     header: true,
     skipEmptyLines: true,
-    dynamicTyping: true,
-    trimHeaders: true
+    dynamicTyping: true
   });
 
   return {
-    data: result.data as Array<Record<string, any>>,
+    data: result.data || [],
     headers: result.meta.fields || [],
-    rowCount: result.data.length
+    rowCount: result.data ? result.data.length : 0
   };
 };
 

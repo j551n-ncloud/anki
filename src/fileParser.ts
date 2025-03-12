@@ -1,4 +1,3 @@
-import Papa from 'papaparse';
 import { parseCSV as parseCSVUtil, generateFlashcardPromptFromCSV } from './csvUtils';
 
 export interface ParsedData {
@@ -34,7 +33,7 @@ export const parseFileContent = (fileContent: string, fileName: string): ParsedD
 };
 
 /**
- * Parse CSV content using PapaParse
+ * Parse CSV content using utility function
  */
 const parseCSV = (content: string): ParsedData => {
   try {
