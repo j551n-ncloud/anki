@@ -109,7 +109,9 @@ const parseMarkdown = (content: string): ParsedData => {
     }
   }
 
-  pushContent(); // Ensure the last section is added
+  if (currentContent.trim()) {
+    pushContent(); // Ensure the last section is added
+  }
 
   return {
     format: 'markdown',
@@ -122,6 +124,8 @@ const parseMarkdown = (content: string): ParsedData => {
  * Generate prompt content for Anki card creation from parsed data
  */
 export const generatePromptFromParsedData = (parsedData: ParsedData): string => {
+  console.log('Final Parsed Data:', parsedData); // Debugging log
+
   switch (parsedData.format) {
     case 'csv':
       if (parsedData.content) {
@@ -130,7 +134,7 @@ export const generatePromptFromParsedData = (parsedData: ParsedData): string => 
       return parsedData.content;
 
     case 'markdown':
-      if (parsedData.structured && parsedData.structured.length > 0) {
+      if (parsedData.structured?.length) {
         return `Generate Anki flashcards from the following Markdown content:
 
 ${parsedData.structured.map(section => 
@@ -142,7 +146,7 @@ Please create concise and effective flashcards based on this content.`;
       return parsedData.content;
 
     case 'json':
-      if (parsedData.structured && parsedData.structured.length > 0) {
+      if (parsedData.structured?.length) {
         return `Generate Anki flashcards from the following JSON data:
 
 ${JSON.stringify(parsedData.structured.slice(0, 3), null, 2)}
