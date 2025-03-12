@@ -7,11 +7,15 @@ import {
   List, 
   ListItem, 
   ListItemText, 
+  ListItemIcon,
   CircularProgress, 
   IconButton, 
-  Alert 
+  Alert,
+  Chip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DescriptionIcon from '@mui/icons-material/Description';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 
 interface FileUploadProps {
   onFileContent: (content: string, fileName: string) => void;
@@ -83,6 +87,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       <Button
         variant="contained"
         onClick={() => fileInputRef.current?.click()}
+        startIcon={<FileUploadIcon />}
         sx={{ mb: 2 }}
       >
         Upload Files
@@ -117,9 +122,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
                   </IconButton>
                 }
               >
+                <ListItemIcon>
+                  <DescriptionIcon />
+                </ListItemIcon>
                 <ListItemText
                   primary={file.name}
-                  secondary={`${(file.size / 1024).toFixed(2)} KB`}
+                  secondary={
+                    <>
+                      {`${(file.size / 1024).toFixed(2)} KB`}
+                      <Chip 
+                        size="small" 
+                        label={file.name.split('.').pop()?.toUpperCase() || 'FILE'} 
+                        color="primary" 
+                        variant="outlined"
+                        sx={{ ml: 1 }}
+                      />
+                    </>
+                  }
                 />
                 <Button 
                   variant="outlined" 

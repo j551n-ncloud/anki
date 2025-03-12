@@ -176,12 +176,23 @@ function Home() {
             setProcessingFile(true);
             setFileError(null);
             
+            // Extract file extension
+            const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+            
+            // Process file based on type
+            console.log(`Processing file: ${fileName} (${fileExt})`);
+            
+            // Parse file content based on type
             const parsedData = parseFileContent(content, fileName);
             const generatedPrompt = generatePromptFromParsedData(parsedData);
             
+            console.log(`File parsed successfully: ${parsedData.format} format`);
+            
+            // Set the generated prompt
             setPrompt(generatedPrompt);
             setProcessingFile(false);
         } catch (error) {
+            console.error("Error processing file:", error);
             setFileError(`Error processing file: ${error instanceof Error ? error.message : String(error)}`);
             setProcessingFile(false);
         }
