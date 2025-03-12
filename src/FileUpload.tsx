@@ -27,7 +27,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   acceptedFileTypes = ".txt,.md,.csv"
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Removed unused loading state
   const [processingFile, setProcessingFile] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
