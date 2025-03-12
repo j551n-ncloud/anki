@@ -200,20 +200,9 @@ function Home() {
             console.log(`Generated prompt length: ${generatedPrompt.length} characters`);
             
             if (generatedPrompt && generatedPrompt.trim().length > 0) {
-                // Set the prompt state
+                // Just set the prompt state without automatically generating cards
                 setPrompt(generatedPrompt);
-                
-                // Use setTimeout to ensure state update completes
-                setTimeout(() => {
-                    // Use the generatedPrompt directly rather than relying on the state value
-                    mutate({ 
-                        deckName, 
-                        modelName, 
-                        tags: currentTags, 
-                        prompt: generatedPrompt 
-                    });
-                    setSuccessMessage(`File processed: ${fileName}`);
-                }, 100);
+                setSuccessMessage(`File processed: ${fileName}. Ready to generate cards.`);
             } else {
                 setFileError(`Could not generate a valid prompt from ${fileName}`);
             }
