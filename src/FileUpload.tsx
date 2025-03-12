@@ -27,7 +27,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
   acceptedFileTypes = ".txt,.md,.csv"
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  // Removed unused loading state
   const [processingFile, setProcessingFile] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +35,21 @@ const FileUpload: React.FC<FileUploadProps> = ({
     setError(null);
     if (event.target.files) {
       const fileList = Array.from(event.target.files);
-      setFiles(prev => [...prev, ...fileList]);
+
+      // Filter out duplicates
+      const uniqueFiles = fileList.filter(
+        (newFile) => !files.some((existingFile) => existingFile.name === newFile.name)
+      );
+
+      if (uniqueFiles.length === 0) {
+        setError("Duplicate files are not allowed.");
+        return;
+      }
+
+      setFiles(prev => [...prev, ...uniqueFiles]);
+
+      // Reset the input to allow re-uploading the same file
+      event.target.value = "";
     }
   };
 
@@ -51,8 +64,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
     try {
       const content = await readFileAsText(file);
       onFileContent(content, file.name);
+
+      // Remove the processed file from the list
+      setFiles((prev) => prev.filter((_, i) => i !== index));
     } catch (err) {
-      setError(Error reading file: ${err instanceof Error ? err.message : String(err)});
+      setError(`Error reading file: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setProcessingFile(null);
     }
@@ -117,7 +133,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           <List dense>
             {files.map((file, index) => (
               <ListItem
-                key={${file.name}-${index}}
+                key={`${file.name}-${index}`}
                 secondaryAction={
                   <IconButton 
                     edge="end" 
@@ -135,7 +151,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                   primary={file.name}
                   secondary={
                     <>
-                      {${(file.size / 1024).toFixed(2)} KB}
+                      {`${(file.size / 1024).toFixed(2)} KB`}
                       <Chip 
                         size="small" 
                         label={getFileTypeLabel(file.name)} 
