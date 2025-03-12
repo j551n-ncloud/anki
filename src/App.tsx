@@ -252,7 +252,7 @@ function Home() {
                 <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to Anki using AnkiConnect. Please make sure Anki is running and you have the AnkiConnect plugin enabled, and that you have set the CORS settings.</Alert>
                 : <></>}
             {openAIError ?
-                <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to AI Provider. Ensure you have entered your OpenAI key correctly.</Alert>
+                <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px" }}>Error: We can't connect to AI Provider. Ensure you have entered your AI Provider key correctly.</Alert>
                 : <></>}
             {fileError ?
                 <Alert severity="error" sx={{ marginTop: "20px", marginLeft: "25px", marginBottom: "10px" }}>{fileError}</Alert>
