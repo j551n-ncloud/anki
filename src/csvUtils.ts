@@ -17,13 +17,12 @@ export const parseCSV = (csvString: string): CSVParseResult => {
     const result = Papa.parse(csvString, {
       header: true,
       skipEmptyLines: true,
-      dynamicTyping: true,
-      trimHeaders: true,
+      dynamicTyping: true
     });
 
     // Clean up headers - remove whitespace and empty headers
     const headers = result.meta.fields || [];
-    const cleanedHeaders = headers.map(header => header.trim());
+    const cleanedHeaders = headers.map((header: string) => header.trim());
 
     // Transform the data to use the cleaned headers
     const data = result.data as Array<Record<string, any>>;
