@@ -65,8 +65,9 @@ export async function suggestAnkiNotes(
             }
         ],
     };
-    const res = await fetch('https://api.helmholtz-blablador.fz-juelich.de/api/v1/chat/completions', {
-        method: 'POST',
+    //const res = await fetch('https://api.helmholtz-blablador.fz-juelich.de/api/v1/chat/completions', {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${openAIKey}`,
