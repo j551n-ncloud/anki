@@ -1,0 +1,22 @@
+deploy:
+deploy:
+  stage: deploy
+  before_script:
+    - apk update && apk add openssh git  # Ensure Git is installed
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H localhost >> ~/.ssh/known_hosts
+  script:
+    - |
+      if [ ! -d "/home/gitlab-runner/ankiweb/.git" ]; then
+        git clone https://gitlab.j551n.com/j551n/anki-card-creator.git /home/gitlab-runner/ankiweb
+      else
+        cd /home/gitlab-runner/ankiweb && git pull origin main
+      fi
+    - cd /home/gitlab-runner/ankiweb
+    - docker compose down anki-card-creator || true  # Safely ignore errors if the container isn't up
+    - docker compose up --build -d
+  only:
+    - main
+
