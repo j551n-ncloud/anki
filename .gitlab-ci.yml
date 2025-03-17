@@ -18,3 +18,4 @@ deploy:
     - docker push repo.j551n.com/library/anki-card-creator:$CI_PIPELINE_ID
   only:
     - main
+    
