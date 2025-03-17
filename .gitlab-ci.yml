@@ -1,3 +1,6 @@
+stages:
+  - deploy
+
 deploy:
   stage: deploy
   script:
@@ -10,8 +13,8 @@ deploy:
     - cd /home/gitlab-runner/ankiweb
     - docker compose stop anki-card-creator || true  # Stop the service if running
     - docker compose up --build -d
-    - docker tag anki-card-creator:latest repo.j551n.com/j551n/anki-card-creator:latest
-    - docker tag anki-card-creator:latest repo.j551n.com/j551n/anki-card-creator:$CI_PIPELINE_ID
+    - docker tag ankiweb-anki-card-creator:latest repo.j551n.com/j551n/anki-card-creator:latest
+    - docker tag ankiweb-anki-card-creator:latest repo.j551n.com/j551n/anki-card-creator:$CI_PIPELINE_ID
     - docker login repo.j551n.com -u ${REPO_USERNAME} -p ${REPO_PASSWORD}
     - docker push repo.j551n.com/j551n/anki-card-creator:$CI_PIPELINE_ID
   only:
