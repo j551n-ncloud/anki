@@ -13,9 +13,5 @@ deploy:
     - cd /home/gitlab-runner/ankiweb
     - docker compose stop anki-card-creator || true  # Stop the service if running
     - docker compose up --build -d
-    - docker login repo.j551n.com -u admin -p 2r0NnW70uy
-    - docker tag ankiweb-anki-card-creator:latest repo.j551n.com/library/anki-card-creator:$CI_PIPELINE_ID
-    - docker push repo.j551n.com/library/anki-card-creator:$CI_PIPELINE_ID
   only:
     - main
-    
