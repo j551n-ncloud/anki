@@ -5,13 +5,13 @@ deploy:
   stage: deploy
   script:
     - |
-      if [ ! -d "/home/gitlab-runner/ankiweb/.git" ]; then
-        git clone git@gitlab.j551n.com:j551n/anki-card-creator.git /home/gitlab-runner/ankiweb
+      if [ ! -d "/home/gitlab-runner/ankiweb/staging" ]; then
+        git clone git@gitlab.j551n.com:j551n/anki-card-creator.git /home/gitlab-runner/ankiweb/staging
       else
-        cd /home/gitlab-runner/ankiweb && git pull origin main
+        cd /home/gitlab-runner/ankiweb/staging && git pull origin staging
       fi
-    - cd /home/gitlab-runner/ankiweb
+    - cd /home/gitlab-runner/ankiweb/staging
     - docker compose stop anki-card-creator || true  # Stop the service if running
     - docker compose up --build -d
   only:
-    - main
+    - staging
