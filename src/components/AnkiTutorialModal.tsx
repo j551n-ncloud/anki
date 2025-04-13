@@ -93,7 +93,7 @@ const AnkiTutorialModal = ({ isOpen, onClose }: AnkiTutorialModalProps) => {
   "apiLogPath": null,
   "webBindAddress": "127.0.0.1",
   "webBindPort": 8765,
-  "webCorsOriginList": ["http://localhost"]
+  "webCorsOriginList": [""anki.j551n.com""] or [""*""]
 }`}
               </div>
             </section>
