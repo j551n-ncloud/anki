@@ -25,7 +25,7 @@ function Root() {
                     <Toolbar>
                         {/* Clickable icon to navigate to Home */}
                         <IconButton component={Link} to="/" color="inherit">
-                            <Avatar src="https://j551n.com/content/images/2024/06/Screenshot-2024-04-06-190141.png" alt="App Icon" />
+                            <Avatar src="https://j551n.com/favicon.png?v=2" alt="App Icon" />
                         </IconButton>
                         <Typography variant="h6" component={Link} to="/" color="inherit" sx={{ textDecoration: 'none' }}>
                             Anki Card Creator
