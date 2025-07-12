@@ -1,22 +1,14 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+// Vite config with allowed host
+export default defineConfig({
+  plugins: [react()],
   server: {
-    host: "::",
-    port: 8080,
+    port: 88,       // Set the desired port
+    host: true,     // Allow external access
+    allowedHosts: [
+      'anki.j551n.com', // Add the allowed host here
+    ],
   },
-  plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-}));
+})

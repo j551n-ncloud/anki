@@ -1,31 +1,23 @@
+# Use an official Node.js runtime as the base image
+FROM node:14
 
-FROM node:18-alpine as build
-
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy package.json and package-lock.json to the working directory
+COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
-# Copy source code
+# Copy the rest of the application code to the working directory
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+# Expose the desired port
+EXPOSE 88
 
-# Copy built files from build stage to nginx serve directory
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy custom nginx config if needed
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
-EXPOSE 80
-
-# Command to run nginx in foreground
-CMD ["nginx", "-g", "daemon off;"]
+# Run the application
+CMD ["npm", "start"]
